@@ -14,8 +14,9 @@
     </style>
 </head>
 <body>
+<script src="d3.js"></script>    
 <script type="module">
-import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm"; 
+
 
 const scatterData = (callback) => {
     d3.csv("us-cities.csv").then((data) => {

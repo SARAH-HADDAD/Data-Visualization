@@ -2,8 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Sorting Algorithm Visualization</title>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <title data-i18n="title">Sorting Algorithm Visualization</title>
+    <script src="d3.js"></script>
     <style>
       .bar {
         fill: steelblue;
@@ -92,38 +92,29 @@
 
         textLabels
           .data(newData)
-          .attr("y", (d) => yScale(d)+5)
-          .attr("x", (d, i) => xScale(i) + xScale.bandwidth() / 2)
+          .attr("y", (d) => yScale(d))
           .text((d) => d);
       }
 
       async function swap(i, j) {
         const transition = d3.transition().duration(2000).ease(d3.easeCircle);
 
-        bars
+        bars.transition(transition).attr("x", (d, k) => {
+          if (k === i) return xScale(j);
+          if (k === j) return xScale(i);
+          return xScale(k);
+        });
+        textLabels
           .transition(transition)
-          .attr("x", (d, k) => {
-            if (k === i) return xScale(j);
-            if (k === j) return xScale(i);
-            return xScale(k);
-          })
-          textLabels
-          .transition(transition)
-          // "x", (d, i) => xScale(i) + xScale.bandwidth() / 2
-          .attr("x", (d, k) => {
-            if (k === i) return xScale(j)+ xScale.bandwidth();
-            if (k === j) return xScale(i)+  xScale.bandwidth();
-            return xScale(k);
-          })
-          .attr("text-anchor", "middle")
-          
+          .attr("x", (d, i) => xScale(i) + xScale.bandwidth() / 2)
+          .attr("text-anchor", "middle");
 
         await new Promise((resolve) => setTimeout(resolve, 1500));
 
         bars
           .transition()
           .duration(0)
-          .attr("x", (d, k) => xScale(k))
+          .attr("x", (d, k) => xScale(k));
       }
 
       async function bubbleSort(arr) {
@@ -146,6 +137,16 @@
         await bubble();
       }
 
+      // Translation function
+      function translateLabels() {
+        document.querySelector("title").textContent = "Sorting Algorithm Visualization";
+        // Add more translations as needed
+      }
+
+      // Call the translation function
+      translateLabels();
+
+      // Call bubbleSort after translation
       bubbleSort(data);
     </script>
   </body>

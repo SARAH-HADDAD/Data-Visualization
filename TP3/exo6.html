@@ -90,13 +90,13 @@
                 columnNames.forEach(function(xColumn, j) {
                     if (xColumn !== yColumn) {
                         var xScale = d3.scaleLinear()
-                            .domain([d3.min(data, d => d[xColumn]), d3.max(data, d => d[xColumn])])
+                            .domain([d3.min(data, d => parseInt(d[xColumn])), d3.max(data, d => parseInt(d[xColumn]))])
                             .range([0, width - padding]);
                         console.log(d3.min(data, d => d[xColumn]));
                         var yScale = d3.scaleLinear()
-                            .domain([d3.min(data, d => d[yColumn]), d3.max(data, d => d[yColumn])])
+                            .domain([d3.min(data, d => parseInt(d[yColumn])), d3.max(data, d => parseInt(d[yColumn]))])
                             .range([height, 0]);
-                        console.log(d3.min(data, d => d[yColumn]));
+                        console.log(d3.min(data, d => parseInt(d[yColumn])));
                         var xAxis = d3.axisBottom(xScale).ticks(5).tickFormat(d3.format(".2s")); 
                         var yAxis = d3.axisLeft(yScale).ticks(5).tickFormat(d3.format(".2s"));  
 
