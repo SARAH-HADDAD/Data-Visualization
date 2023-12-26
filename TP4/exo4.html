@@ -1,0 +1,89 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Algeria Map</title>
+    <style>
+      .bubble {
+        stroke-width: 2px;
+        stroke: grey;
+      }
+      .bubble:hover {
+        stroke: black;
+      }
+      body {
+        padding: 2%;
+        width: 500px;
+        margin: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="d3.js" charset="utf-8"></script>
+    <script src="topojson.js"></script>
+    <script type="module">
+
+        let width = 500; // Adjusted width for better visualization
+        let height = 500; // Adjusted height for better visualization
+  
+        let svg = d3
+          .select("body")
+          .append("svg")
+          .attr("width", width)
+          .attr("height", height);
+  
+        d3.json("algeria.json").then((topojsonData) => {
+          let features = topojson.feature(
+            topojsonData,
+            topojsonData.objects.countries
+          ).features;
+  
+          var projection = d3.geoMercator().fitSize([width, height], {
+            type: "FeatureCollection",
+            features: features,
+          });
+  
+          var path = d3.geoPath().projection(projection);
+  
+          svg
+            .selectAll("path")
+            .data(features)
+            .enter()
+            .append("path")
+            .attr("d", path)
+            .attr("fill", "white")
+            .attr("stroke", "black")
+            .attr("stroke-width", 1);
+  
+          // Calculate and display the center of gravity for each country
+          features.forEach((country) => {
+            let centroid = path.centroid(country);
+            svg
+              .append("circle")
+              .attr("cx", centroid[0])
+              .attr("cy", centroid[1])
+              .attr("r", 5)
+              .attr("fill", "red")
+              .attr("class", "bubble");
+  
+            // Compare the latitude and longitude of the centroid with the center of gravity
+            let gravityLatitude = height / 2; // Assuming the center of gravity is at the center of the SVG
+            let gravityLongitude = width / 2;
+  
+            if (centroid[0] < gravityLongitude) {
+              console.log("West of center");
+            } else {
+              console.log("East of center");
+            }
+  
+            if (centroid[1] < gravityLatitude) {
+              console.log("North of center");
+            } else {
+              console.log("South of center");
+            }
+          });
+  
+        });
+      </script>
+  </body>
+</html>

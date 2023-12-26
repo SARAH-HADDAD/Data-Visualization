@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <style type="text/css">
+      .bar {
+        fill: steelblue;
+      }
+
+      .bar:hover {
+        fill: orange;
+      }
+
+      .axis path,
+      .axis line {
+        fill: none;
+        stroke: black;
+      }
+      .axis text {
+        font-family: sans-serif;
+        font-size: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="d3.js"></script>
+    <script type="module">
+
+      // Read the CSV file
+      const scatterData = (callback) => {
+        d3.csv("us-cities-top-1k.csv").then((data) => {
+          let dataset = data.map((d) => {
+            return {
+              State: d.State,
+              Population: parseFloat(d.Population),
+            };
+          });
+          callback(dataset);
+        });
+      };
+
+      // Display the data as paragraphs
+      scatterData((data) => {
+        d3.select("body")
+          .selectAll("p")
+          .data(data)
+          .enter()
+          .append("p")
+          .text((d) => {
+            return d.State + " " + d.Population;
+          });
+        const filteredData = data.slice(0, 20);
+        // Create an SVG for the histogram:
+        let h = 1000;
+        let w = 500;
+        let svg = d3.select("body").append("svg").attr("height", h).attr("width", w);
+
+        // Define scales for x and y
+        const xScale = d3
+          .scaleBand()
+          .domain(filteredData.map((d) => d.state))
+          .range([50, w - 50])
+          .padding(0.1);
+
+        // Define the vertical padding
+        const padding = 30;
+
+        // Define the scale for the y-axis
+        let yDomainMin = d3.min(filteredData, (d) => d.);
+        let yDomainMax = d3.max(filteredData, (d) => d.value);
+        let yScale = d3
+          .scaleLinear()
+          .domain([yDomainMin - 10, yDomainMax + 10])
+          .range([h - padding, padding]);
+
+        // Create bars for the histogram
+        svg
+          .selectAll("rect")
+          .data(filteredData)
+          .enter()
+          .append("rect")
+          .attr("class", "bar")
+          .attr("x", (d) => xScale(d.Population))
+          .attr("y", (d) => yScale(d.State))
+          .attr("width", xScale.bandwidth())
+          .attr("height", (d) => h - padding - yScale(d.value))
+          .attr("fill", "steelblue");
+
+
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style type="text/css">
+        .axis path,
+        .axis line {
+            fill: none;
+            stroke: black;            
+        } 
+        .axis text {
+            font-family: sans-serif;
+            font-size: 8px;
+        }
+    </style>
+</head>
+<body>
+<script type="module">
+import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm"; 
+
+const scatterData = (callback) => {
+    d3.csv("us-cities.csv").then((data) => {
+        let dataset = data.map((d) => {
+                                return {
+                                    place: d.place,
+                                    population: parseInt(d.population), 
+                                    latitude: parseInt(d.lat),    
+                                    longitude: parseInt(d.lon)    
+                                };
+                        }); 
+        callback(dataset);
+    });      
+};
+
+scatterData((data) => {
+    d3.select("body").selectAll("p")
+    .data(data)
+    .enter()
+    .append("p")
+    .text((d) => {
+        return d.place+" "+d.population+" "+d.latitude+" "+d.longitude;
+    });  
+    
+    let h = 500;
+    let w = 1000;
+    let svg = d3.select("body")
+                .append("svg")
+                .attr("height", h)
+                .attr("width", w);
+
+    let padding = 30;
+    let xDomainMin = d3.min(data, (d) => {return d.longitude;});
+    let xDomainMax = d3.max(data, (d) => {return d.longitude;});
+    let xScale = d3.scaleLinear()
+                    .domain([xDomainMin-10, xDomainMax+10])
+                    .range([padding, w - padding]);
+                    
+    let yDomainMin = d3.min(data, (d) => {return d.latitude;});
+    let yDomainMax = d3.max(data, (d) => {return d.latitude;});
+    let yScale = d3.scaleLinear()
+                    .domain([yDomainMin-10, yDomainMax+10])
+                    .range([h - padding, padding]);    
+
+    let rDomain = d3.max(data, (d) => {return d.population;});
+    let rScale = d3.scaleLinear()
+                    .domain([0, rDomain])
+                    .range([0, rDomain/100000]);
+
+    let cScale = d3.scaleSequential(d3.interpolate("purple", "yellow")) 
+                        .domain([0, rDomain]);                        
+
+    svg.selectAll("circle")
+        .data(data)
+        .enter()
+        .append("circle")    
+        .attr("cx", (d) => {return xScale(d.longitude); })
+        .attr("cy", (d) => {return yScale(d.latitude); })
+        .attr("r", (d) => {return rScale(d.population); })
+        .attr("fill", (d) => {return cScale(d.population); })
+
+    svg.selectAll("text")
+        .data(data)
+        .enter()
+        .append("text")
+        .text((d) => {return d.place;})
+        .attr("x", (d) => {return xScale(d.longitude);})
+        .attr("y", (d) => {return yScale(d.latitude);})
+        .attr("fill", "black")
+        .attr("font-size", "8px")
+
+    let xAxis = d3.axisBottom(xScale).ticks(5);
+    let yAxis = d3.axisLeft(yScale).ticks(5);
+
+    svg.append("g")
+        .attr("class", "axis")
+        .attr("transform", "translate(0, "+ (h - padding) + ")")
+        .call(xAxis);
+
+    svg.append("g")
+        .attr("class", "axis")
+        .attr("transform", "translate("+ padding + ", 0)")
+        .call(yAxis);
+});
+
+</script>
+</body>
+</html>

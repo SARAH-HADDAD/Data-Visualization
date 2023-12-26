@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <style type="text/css">
+     
+      .dot:hover {
+        fill: orange;
+      }
+
+      .axis path,
+      .axis line {
+        fill: none;
+        stroke: black;
+      }
+
+      .axis text {
+        font-family: sans-serif;
+        font-size: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="module">
+      import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+
+      let file1 = d3.csv('us-productivity.csv');
+      let file2 = d3.csv('us-cities-top-1k.csv');
+
+      Promise.all([file1, file2]).then((data) => {
+        let data1 = data[0];
+        let data2 = data[1];
+
+        const combinedData = data1.map((d1) => {
+          const cityData = data2.find((d2) => d2.State === d1.state);
+          if (cityData) {
+            return {
+              state: d1.state,
+              productivity: parseFloat(d1.value),
+              population: parseInt(cityData.Population),
+              lat: parseFloat(cityData.lat),
+              lon: parseFloat(cityData.lon),
+            };
+          
+          }
+        });
+
+        const svg = d3
+          .select("body")
+          .append("svg")
+          .attr("width", 800)
+          .attr("height", 400);
+
+        const xScale = d3
+          .scaleLinear()
+          .domain([0, d3.max(combinedData, (d) => d.productivity)])
+          .range([50, 750]);
+
+        const yScale = d3
+          .scaleLinear()
+          .domain([0, d3.max(combinedData, (d) => d.population)])
+          .range([350, 50]);
+
+        const colorScale = d3.scaleSequential(d3.interpolatePuRd)
+          .domain([0, d3.max(combinedData, (d) => d.productivity)]);
+        const sizeScale = d3.scaleLinear()
+          .domain([(d3.min(combinedData, (d) => d.population)) , d3.max(combinedData, (d) => d.population)])
+          .range([5, 50]);
+
+        svg.selectAll(".dot")
+          .data(combinedData)
+          .enter()
+          .append("circle")
+          .attr("class", "dot")
+          .attr("cx", (d) => xScale(d.productivity))
+          .attr("cy", (d) => yScale(d.population))
+          .attr("r", (d) => sizeScale(d.population))
+          .attr("fill", (d) => colorScale(d.productivity));
+        const xAxis = d3.axisBottom(xScale).ticks(5);
+        const yAxis = d3.axisLeft(yScale).ticks(5);
+
+        svg.append("g")
+          .attr("class", "axis")
+          .attr("transform", "translate(0, 350)")
+          .call(xAxis);
+
+        svg.append("g")
+          .attr("class", "axis")
+          .attr("transform", "translate(50, 0)")
+          .call(yAxis);
+      });
+    </script>
+  </body>
+</html>

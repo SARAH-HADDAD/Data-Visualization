@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Penguins Visualization</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+
+<body>
+    <div id="chart-container"></div>
+
+    <script>
+        d3.csv('penguins.csv').then(data => {
+            // regrouper les données par espèce et par île
+            const groupedData = d3.group(data, d => d.island, d => d.species);
+
+            // Extraire les espèces
+            const species = Array.from(new Set(data.map(d => d.species)));
+
+            // échelle de couleurs
+            const colorScale = d3.scaleOrdinal()
+                .domain(species)
+                .range(d3.schemeCategory10);
+
+            const stackedData = Array.from(groupedData, ([island, speciesData]) => {
+                const entry = { island };
+                species.forEach(specie => {
+                    entry[specie] = (speciesData.get(specie) || []).length || 0;
+                });
+                return entry;
+            });
+
+            // le stacked barchart
+            const margin = { top: 20, right: 100, bottom: 30, left: 40 };
+            const width = 500 - margin.left - margin.right;
+            const height = 300 - margin.top - margin.bottom;
+
+            const svg = d3.select("#chart-container")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            const stack = d3.stack().keys(species);
+
+            const series = stack(stackedData);
+
+            const x = d3.scaleBand()
+                .domain(stackedData.map(d => d.island))
+                .range([0, width])
+                .padding(0.1);
+
+            const y = d3.scaleLinear()
+                .domain([0, d3.max(series, d => d3.max(d, d => d[1]))])
+                .nice()
+                .range([height, 0]);
+
+            const bars = svg.selectAll("g")
+                .data(series)
+                .join("g")
+                .attr("fill", d => colorScale(d.key))
+                .selectAll("rect")
+                .data(d => d)
+                .join("rect")
+                .attr("x", (d, i) => x(stackedData[i].island))
+                .attr("y", d => y(d[1]))
+                .attr("height", d => y(d[0]) - y(d[1]))
+                .attr("width", x.bandwidth());
+
+            // Ajouter les axes
+            const xAxis = d3.axisBottom(x);
+            const yAxis = d3.axisLeft(y);
+
+            svg.append("g")
+                .attr("transform", "translate(0," + height + ")")
+                .call(xAxis);
+
+            svg.append("g")
+                .call(yAxis);
+        });
+    </script>
+</body>
+
+</html>

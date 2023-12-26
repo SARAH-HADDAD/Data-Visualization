@@ -1,0 +1,97 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Algeria Map</title>
+    <style>
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="d3.js" charset="utf-8"></script>
+    <script src="topojson.js"></script>
+    <script type="module">
+      function calculateCentroid(coordinates) {
+        const sum = coordinates.reduce(
+          (acc, coord) => [acc[0] + coord[0], acc[1] + coord[1]],
+          [0, 0]
+        );
+        return [sum[0] / coordinates.length, sum[1] / coordinates.length];
+      }
+      const width = 500;
+      const height = 500;
+
+      const svg = d3
+        .select("body")
+        .append("svg")
+        .attr("width", width)
+        .attr("height", height);
+
+      d3.json("algeria.json").then((topojsonData) => {
+        const features = topojson.feature(
+          topojsonData,
+          topojsonData.objects.countries
+        ).features;
+
+        const projection = d3.geoMercator().fitSize([width, height], {
+          type: "FeatureCollection",
+          features,
+        });
+
+        const path = d3.geoPath().projection(projection);
+
+        const gravityLatitude = height / 2;
+        const gravityLongitude = width / 2;
+
+        const centroids = { SW: [], SE: [], NW: [], NE: [] };
+
+        svg
+          .selectAll("path")
+          .data(features)
+          .enter()
+          .append("path")
+          .attr("d", path)
+          .attr("stroke", "black")
+          .attr("stroke-width", 0.2)
+          .attr("fill", (d) => {
+            const centroid = path.centroid(d);
+            const [x, y] = centroid;
+            const region =
+              x < gravityLongitude
+                ? y > gravityLatitude
+                  ? "SW"
+                  : "NW"
+                : y > gravityLatitude
+                ? "SE"
+                : "NE";
+            centroids[region].push(centroid);
+            return { SW: "yellow", SE: "red", NW: "blue", NE: "green" }[region];
+          });
+
+        const centroidImages = [
+          { type: "batata", region: "SW" },
+          { type: "dates", region: "SE" },
+          { type: "oranges", region: "NW" },
+          { type: "olives", region: "NE" },
+        ];
+
+        centroidImages.forEach((d) => {
+          const centroid = calculateCentroid(centroids[d.region]);
+          svg
+            .append("image")
+            .attr("xlink:href", () => "icons/" + d.type + ".png")
+            .attr("x", centroid[0] - 35)
+            .attr("y", centroid[1] - 15)
+            .attr("width", 70)
+            .attr("height", 70);
+        });
+      });
+    </script>
+  </body>
+</html>

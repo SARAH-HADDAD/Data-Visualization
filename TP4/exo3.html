@@ -1,0 +1,150 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Algeria Map</title>
+    <style>
+      .bubble {
+        stroke-width: 2px;
+        stroke: grey;
+      }
+      .bubble:hover {
+        stroke: black;
+      }
+      body {
+        padding: 2%;
+        width: 500px;
+        margin: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="d3.js" charset="utf-8"></script>
+    <script src="topojson.js"></script>
+    <script type="module">
+      // Function to compare arrays for equality
+      function arraysEqual(arr1, arr2) {
+        if (arr1.length !== arr2.length) return false;
+        for (let i = 0; i < arr1.length; i++) {
+          if (arr1[i] !== arr2[i]) return false;
+        }
+        return true;
+      }
+      function getRandomColor() {
+          var letters = "0123456789ABCDEF";
+          var color = "#";
+          for (var i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+          }
+          return color;
+        }
+
+      let width = 500; // Adjusted width for better visualization
+      let height = 500; // Adjusted height for better visualization
+
+      let svg = d3
+        .select("body")
+        .append("svg")
+        .attr("width", width)
+        .attr("height", height);
+
+      d3.json("algeria.json").then((topojsonData) => {
+        let features = topojson.feature(
+          topojsonData,
+          topojsonData.objects.countries
+        ).features;
+
+        var projection = d3.geoMercator().fitSize([width, height], {
+          type: "FeatureCollection",
+          features: features,
+        });
+
+        var path = d3.geoPath().projection(projection);
+
+        svg
+          .selectAll("path")
+          .data(features)
+          .enter()
+          .append("path")
+          .attr("d", path)
+          .attr("fill", "white")
+          .attr("stroke", "black")
+          .attr("stroke-width", 1);
+
+        let Arcs = [];
+        let CommonArcs = [];
+
+        for (
+          var j = 0;
+          j < topojsonData.objects.countries.geometries.length;
+          j++
+        ) {
+          for (
+            var k = 0;
+            k < topojsonData.objects.countries.geometries[j].arcs.length;
+            k++
+          ) {
+            for (
+              var l = 0;
+              l < topojsonData.objects.countries.geometries[j].arcs[k].length;
+              l++
+            ) {
+              if (topojsonData.objects.countries.geometries[j].arcs[k][l] < 0) {
+                topojsonData.objects.countries.geometries[j].arcs[k][l] =
+                  Math.abs(
+                    topojsonData.objects.countries.geometries[j].arcs[k][l]
+                  ) - 1;
+              }
+
+              // Check if the arc exists in Arcs
+              if (
+                Arcs.includes(
+                  topojsonData.objects.countries.geometries[j].arcs[k][l]
+                )
+              ) {
+                // Check if it is not already in CommonArcs, if not, add it
+                if (
+                  !CommonArcs.includes(
+                    topojsonData.objects.countries.geometries[j].arcs[k][l]
+                  )
+                ) {
+                  CommonArcs.push(
+                    topojsonData.objects.countries.geometries[j].arcs[k][l]
+                  );
+                }
+              } else {
+                // If not found in Arcs, add it
+                Arcs.push(
+                  topojsonData.objects.countries.geometries[j].arcs[k][l]
+                );
+              }
+            }
+          }
+        }
+
+        // Create a new TopoJSON object for the common arcs
+        let commonArcsObject = {
+          type: "GeometryCollection",
+          geometries: CommonArcs.map((arcIndex) => ({
+            type: "LineString",
+            arcs: [arcIndex],
+          })),
+        };
+        console.log("commonArcsObject:", commonArcsObject);
+
+        let colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+        //console.log("colorScale:", colorScale);
+
+        svg
+          .selectAll("line")
+          .data(topojson.feature(topojsonData, commonArcsObject).features)
+          .enter()
+          .append("path")
+          .attr("d", path)
+          .attr("fill", "none")
+          .attr("stroke", (d, i) => getRandomColor()) // Use color scale based on index
+          .attr("stroke-width", 3);
+      });
+    </script>
+  </body>
+</html>

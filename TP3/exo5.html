@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D3 Stacked Bar Chart</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        /* Add some styling for better aesthetics */
+        body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+}
+
+        rect {
+    transition: opacity 0.3s ease-in-out;
+}
+
+.legend rect, .legend text {
+    transition: fill 0.3s ease-in-out;
+}
+
+
+        #viz_container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f8f8f8;
+        }
+
+        svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .grid path {
+            stroke-width: 0;
+            stroke: #333333;
+        }
+
+        .grid .tick line {
+            stroke: #333333;
+            stroke-width: 0.3px;
+            stroke-opacity: 0.3;
+        }
+
+        text.chart-title {
+            font-size: 18px;
+            font-weight: bold;
+            fill: #222222;
+            text-anchor: middle;
+        }
+
+        text.chart-label {
+            font-size: 14px;
+            font-weight: 400;
+            fill: #666666;
+        }
+
+        text.chart-source, text.copyright, .legend {
+            font-size: 12px;
+            fill: #888888;
+        }
+
+        .tooltip {
+            background-color: #ffffff;
+            font-family: 'Lato', sans-serif;
+            font-size: 14px;
+            padding: 8px;
+            color: #333333;
+            border: 1px solid #dddddd;
+            box-shadow: 0px 0px 8px 0px #dddddd;
+            position: absolute;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        rect:hover {
+            opacity: 0.7;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="chart"></div>
+
+    <script>
+        // Using d3.csv to load the CSV file asynchronously
+        d3.csv('penguins.csv').then(function(data) {
+            // Grouping data by species and island
+            var groupedData = d3.group(data, d => d.island, d => d.species);
+
+            const species = Array.from(new Set(data.map(d => d.species)));
+            console.log(species);
+
+            // Define color scale
+            const colorScale = d3.scaleOrdinal()
+                .domain(species)
+                .range(['#e41a1c','#377eb8','#4daf4a']);
+
+            const stackedData = Array.from(groupedData, ([island, speciesData]) => {
+                const entry = { island };
+                species.forEach(specie => {
+                    entry[specie] = (speciesData.get(specie) || []).length || 0;
+                });
+                return entry;
+            });
+
+            console.log("stackedData");
+
+            console.log(stackedData);
+
+            // Set up the SVG canvas dimensions
+            var margin = { top: 20, right: 20, bottom: 30, left: 40 };
+            var width = 500 - margin.left - margin.right;
+            var height = 500 - margin.top - margin.bottom;
+
+            // Create SVG element
+            var svg = d3.select("#chart")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            const stack = d3.stack().keys(species);
+            const series = stack(stackedData);
+            console.log(series);
+
+            // Create scales
+            var x = d3.scaleBand().domain(stackedData.map(d => d.island)).range([0, width]).padding(0.1);
+            var y = d3.scaleLinear().domain([0, d3.max(series, d => d3.max(d, d => d[1]))]).range([height, 0]);
+
+            // Create bars with colors
+// Create bars with colors
+svg.selectAll("g")
+    .data(series)
+    .join("g")
+    .attr("fill", d => colorScale(d.key))
+    .selectAll("rect")
+    .data(d => d)
+    .join("rect")
+    .attr("x", (d, i) => x(stackedData[i].island))
+    .attr("y", d => y(d[1] - d[0]))
+    .attr("height",d => {
+                    if (d[0] < (d[1] - d[0]))
+                        return height - y(d[1] - 2*d[0])
+                    else
+                        return y(d[0]) - y(d[1])
+                })
+    .attr("width", x.bandwidth())
+    .attr("opacity", 0.7)
+    ;
+
+
+
+
+
+        // Add legend
+        const legend = svg.selectAll(".legend")
+            .data(species.reverse()) // Reverse to match the stacking order
+            .enter().append("g")
+            .attr("class", "legend")
+            .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+        legend.append("rect")
+            .attr("x", width - 18)
+            .attr("width", 18)
+            .attr("height", 18)
+            .style("fill", colorScale);
+
+        legend.append("text")
+            .attr("x", width - 24)
+            .attr("y", 9)
+            .attr("dy", ".35em")
+            .style("text-anchor", "end")
+            .text(function(d) { return d; });
+
+            // Add x-axis
+            svg.append("g")
+                .attr("transform", "translate(0," + height + ")")
+                .call(d3.axisBottom(x));
+
+            // Add y-axis
+            svg.append("g")
+                .call(d3.axisLeft(y));
+
+        }).catch(function(error) {
+            console.error(error);
+        });
+    </script>
+</body>
+</html>

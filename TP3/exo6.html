@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scatterplot Matrix</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+    <script src="d3.js"></script>
+    <script type="module">
+
+        d3.csv("penguins.csv").then(function(data) {
+
+            data = data.filter(d => !isNaN(d.bill_length_mm) && !isNaN(d.bill_depth_mm) && !isNaN(d.flipper_length_mm) && !isNaN(d.body_mass_g));
+            //,'#','#'
+            var speciesColors = {'Adelie': '#e41a1c', 'Chinstrap': '#377eb8', 'Gentoo': '#4daf4a'};
+
+            var Markers = {'MALE': d3.symbol().type(d3.symbolCross), 'FEMALE': d3.symbol().type(d3.symbolCircle)};
+
+            var margin = {top: 20, right: 20, bottom: 20, left: 20};
+            var width = 250 - margin.left - margin.right;
+            var height = 250 - margin.top - margin.bottom;
+            var padding = 30;
+
+            // Create SVG for Legends
+            var legendsSvg = d3.select("body")
+                .append("svg")
+                .attr("width", width * 4 + margin.left + margin.right + padding * 3)
+                .attr("height", 50)
+                .append("g")
+                .attr("class", "legends")
+                .attr("transform", "translate(" + margin.left + "," + 0 + ")");
+
+            // Species Legend
+            var speciesLegend = legendsSvg.append("g");
+
+            Object.entries(speciesColors).forEach(([species, color], i) => {
+                speciesLegend.append("circle")
+                    .attr("cx", i * 120)
+                    .attr("cy", 25)
+                    .attr("r", 6)
+                    .style("fill", color);
+
+                speciesLegend.append("text")
+                    .attr("x", i * 120)
+                    .attr("y", 45)
+                    .text(species)
+                    .style("font-size", "12px")
+                    .style("text-anchor", "middle");
+            });
+
+            // Marker Legend
+            var markerLegend = legendsSvg.append("g")
+            .attr("transform", "translate(" + (width * 4 ) / 2 + "," + 25 + ")");
+
+            Object.entries(Markers).forEach(([sex, marker], i) => {
+                markerLegend.append("path")
+                    .attr("d", marker)
+                    .attr("cx", i * 120)
+                    .attr("cy", 20)
+                    .attr("fill", "none")
+                    .attr("stroke", "black")
+                    .attr("stroke-width", 0.5);
+
+                markerLegend.append("text")
+                    .attr("x", i * 60)
+                    .attr("y", 20)
+                    .text(sex)
+                    .style("font-size", "12px")
+                    .style("text-anchor", "middle");
+            });
+
+            // Create SVG for Scatterplot Matrix
+            var matrixSvg = d3.select("body")
+                .append("svg")
+                .attr("width", width * 4 + margin.left + margin.right + padding * 3)
+                .attr("height", height * 4 + margin.top + margin.bottom + padding * 3)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            var columnNames = ['bill_length_mm', 'bill_depth_mm', 'flipper_length_mm', 'body_mass_g'];
+
+            columnNames.forEach(function(yColumn, i) {
+                columnNames.forEach(function(xColumn, j) {
+                    if (xColumn !== yColumn) {
+                        var xScale = d3.scaleLinear()
+                            .domain([d3.min(data, d => d[xColumn]), d3.max(data, d => d[xColumn])])
+                            .range([0, width - padding]);
+                        console.log(d3.min(data, d => d[xColumn]));
+                        var yScale = d3.scaleLinear()
+                            .domain([d3.min(data, d => d[yColumn]), d3.max(data, d => d[yColumn])])
+                            .range([height, 0]);
+                        console.log(d3.min(data, d => d[yColumn]));
+                        var xAxis = d3.axisBottom(xScale).ticks(5).tickFormat(d3.format(".2s")); 
+                        var yAxis = d3.axisLeft(yScale).ticks(5).tickFormat(d3.format(".2s"));  
+
+                        // Set the current axis
+                        var g = matrixSvg.append("g")
+                            .attr("transform", "translate(" + (j * (width + padding)) + "," + (i * (height + padding)) + ")");
+
+                        // Plot the scatterplot
+                        data.forEach(function(d) {
+                            var color = speciesColors[d.species];
+                            var marker = Markers[d.sex];
+
+                            g.append("path")
+                                .attr("d", marker)
+                                .attr("transform", "translate(" + xScale(+d[xColumn]) + "," + yScale(+d[yColumn]) + ")")
+                                .attr("fill", color)
+                                .attr("stroke", "black")
+                                .attr("stroke-width", 0.5)
+                                .attr("opacity", 0.7);
+                        });
+
+                        // Set x axis
+                        g.append("g")
+                            .attr("transform", "translate(0," + height + ")")
+                            .call(xAxis);
+
+                        // Set y axis
+                        g.append("g")
+                            .call(yAxis);
+
+                    } else {
+                        // Add a blank space for the diagonal
+                        matrixSvg.append("text")
+                            .attr("x", (j * (width + padding)) + width / 2)
+                            .attr("y", (i * (height + padding)) + height / 2)
+                            .attr("dy", "1em")
+                            .style("text-anchor", "middle")
+                            .text(xColumn)
+                            .attr("font-size", "20px");
+                            
+                    }
+                });
+            });
+        });
+    </script>
+
+</head>
+<body>
+</body>
+</html>

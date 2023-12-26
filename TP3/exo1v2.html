@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <style type="text/css">
+     
+      .dot:hover {
+        fill:rgb(159, 13, 37);
+      }
+
+      .axis path,
+      .axis line {
+        fill: none;
+        stroke: black;
+      }
+
+      .axis text {
+        font-family: sans-serif;
+        font-size: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="module">
+      import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+
+      let file1 = d3.csv('us-productivity.csv');
+      let file2 = d3.csv('us-cities-top-1k.csv');
+
+      Promise.all([file1, file2]).then((data) => {
+        let data1 = data[0];
+        let data2 = data[1];
+
+        const combinedData = data1.map((d1) => {
+          const cityData = data2.find((d2) => d2.State === d1.state);
+          if (cityData) {
+            return {
+              state: d1.state,
+              productivity: parseFloat(d1.value),
+              population: parseInt(cityData.Population),
+              lat: parseFloat(cityData.lat),
+              lon: parseFloat(cityData.lon),
+            };
+          
+          }
+        });
+
+        const svg = d3
+          .select("body")
+          .append("svg")
+          .attr("width", 800)
+          .attr("height", 400);
+
+        const xScale = d3
+          .scaleLinear()
+          .domain([0, d3.max(combinedData, (d) => d.productivity)])
+          .range([50, 750]);
+
+        const yScale = d3
+          .scaleLinear()
+          .domain([0, d3.max(combinedData, (d) => d.population)])
+          .range([350, 50]);
+
+        const colorScale = d3.scaleSequential(d3.interpolate("yellow","purple"))
+          .domain([0, d3.max(combinedData, (d) => d.productivity)]);
+        const sizeScale = d3.scaleLinear()
+          .domain([(d3.min(combinedData, (d) => d.population)) , d3.max(combinedData, (d) => d.population)])
+          .range([5, 50]);
+      
+        svg.selectAll(".dot")
+          .data(combinedData)
+          .enter()
+          .append("circle")
+          .attr("class", "dot")
+          .attr("cx", (d) => xScale(d.productivity))
+          .attr("cy", (d) => yScale(d.population))
+          .attr("r", (d) => sizeScale(d.population))
+          .attr("fill", (d) => colorScale(d.productivity))
+          .attr("fill-opacity", 0.7); // Add opacity to the circles
+
+        const xAxis = d3.axisBottom(xScale).ticks(5);
+        const yAxis = d3.axisLeft(yScale).ticks(5);
+
+        svg.append("g")
+          .attr("class", "axis")
+          .attr("transform", "translate(0, 350)")
+          .call(xAxis);
+
+        svg.append("g")
+          .attr("class", "axis")
+          .attr("transform", "translate(50, 0)")
+          .call(yAxis);
+
+          // Create a vertical color legend
+// Create a vertical color legend
+const legendWidth = 20; // Adjust the width to your preference
+const legendHeight = 150; // Adjust the height to your preference
+const legendX = 750; // Adjust the x position to fit your layout
+const legendY = 50; // Adjust the y position to fit your layout
+
+// Check if colorScale is properly defined and accessible
+// You should have defined colorScale earlier in your code
+// Example: const colorScale = d3.scaleSequential(d3.interpolatePuRd)
+//    .domain([0, d3.max(combinedData, (d) => d.productivity)];
+
+const legendScale = d3.scaleLinear()
+  .domain([0, 1]) // Assuming your colorScale domain is [0, 1]
+  .range([0, legendHeight]); // Use [0, legendHeight] for vertical legend
+
+const legendGradient = svg.append("defs")
+  .append("linearGradient")
+  .attr("id", "legendGradient")
+  .attr("x1", "0%")
+  .attr("y1", "0%") // Start from the top
+  .attr("x2", "0%")
+  .attr("y2", "100%"); // End at the bottom (vertical)
+
+legendGradient.append("stop")
+  .attr("offset", "0%")
+  .attr("stop-color", colorScale(0));
+
+legendGradient.append("stop")
+  .attr("offset", "100%")
+  .attr("stop-color", colorScale(1));
+
+svg.append("rect")
+  .attr("x", legendX)
+  .attr("y", legendY)
+  .attr("width", legendWidth)
+  .attr("height", legendHeight)
+  .style("fill", "url(#legendGradient)");
+
+svg.append("text")
+  .attr("x", legendX - 120) // Adjust the x position for text
+  .attr("y", legendY - 5) // Position it slightly above the legend
+  .text("High Productivity");
+
+svg.append("text")
+  .attr("x", legendX - 5) // Adjust the x position for text
+  .attr("y", legendY + legendHeight + 15) // Position it below the legend
+  .style("text-anchor", "end") // Right-align the text
+  .text("Low Productivity");
+
+    
+
+      });
+    </script>
+  </body>
+</html>

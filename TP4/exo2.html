@@ -1,0 +1,125 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Algeria Map</title>
+    <style>
+      .bubble {
+        stroke-width: 2px;
+        stroke: grey;
+      }
+      .bubble:hover {
+        stroke: black;
+      }
+      body {
+        padding: 2%;
+        width: 500px;
+        margin: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://unpkg.com/topojson@3"></script>
+    <script type="module">
+      let width = 300;
+      let height = 300;
+
+      let svg = d3
+        .select("body")
+        .append("svg")
+        .attr("width", width)
+        .attr("height", height);
+
+      d3.json("algeria.json").then((topojsonData) => {
+        let features = topojson.feature(
+          topojsonData,
+          topojsonData.objects.countries
+        ).features;
+
+        // Create a mapping of arc indices to colors
+        let arcColorMap = {};
+
+        var projection = d3.geoMercator().fitSize([width, height], {
+          type: "FeatureCollection",
+          features: features,
+        });
+
+        var path = d3.geoPath().projection(projection);
+
+        svg
+          .selectAll("path")
+          .data(features)
+          .enter()
+          .append("path")
+          .attr("d", path)
+          .attr("fill", "white")
+          .attr("stroke", function (d, i) {
+            // Iterate through each geometry and its arcs
+            for (
+              var j = 0;
+              j < topojsonData.objects.countries.geometries.length;
+              j++
+            ) {
+              for (
+                var k = 0;
+                k < topojsonData.objects.countries.geometries[j].arcs.length;
+                k++
+              ) {
+                // Get the current arc index
+                let arcIndex =
+                  topojsonData.objects.countries.geometries[j].arcs[k];
+                for (
+                  var l = 0;
+                  l <
+                  topojsonData.objects.countries.geometries[j].arcs[k].length;
+                  l++
+                ) {
+                  arcIndex =
+                    topojsonData.objects.countries.geometries[j].arcs[k][l];
+
+                  if (arcIndex < 0) {
+                    //console.log(arcIndex);
+                    arcIndex = Math.abs(arcIndex) - 1;
+                    //console.log(arcIndex);
+                  }
+                }
+                // If the arc index is not in the color map, assign a new color
+                if (!(arcIndex in arcColorMap)) {
+                  arcColorMap[arcIndex] = "black";
+                } else {
+                  arcColorMap[arcIndex] = getRandomColor();
+                }
+              }
+            }
+            //console.log(arcColorMap);
+            // Return the color for the first arc of the current geometry
+            return arcColorMap[
+              topojsonData.objects.countries.geometries[i].arcs[0]
+            ];
+          })
+          .attr("stroke-width", 1);
+
+        // Function to generate a random color
+        function getRandomColor() {
+          var letters = "0123456789ABCDEF";
+          var color = "#";
+          for (var i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+          }
+          return color;
+        }
+      });
+    </script>
+  </body>
+</html>
+
+
+
+if (!(arcIndex in arcColorMap)) {
+  arcColorMap[arcIndex] = "black";
+} else {
+  arcColorMap[arcIndex] = getRandomColor();
+  console.log(arcIndex);
+  console.log(arcColorMap[arcIndex]);
+}
